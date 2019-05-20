@@ -14,23 +14,15 @@ class LocationComparisonHandler(RequestHandler):
     def initialize(self, **kwargs):
         super().initialize()
 
-    def get(self, *args, **kwargs):
+    async def get(self, *args, **kwargs):
         """
         Retrieves information about multiple cities, rates them and returns a ranking and score for each city.
         :param args:
         :param kwargs:
         :return:
         """
-        response = {'city_data': [{'city_name': 'greatplace',
-                                   'city_rank': 1,
-                                   'city_score': 8.4},
-                                  {'city_name': 'okplace',
-                                   'city_rank': 2,
-                                   'city_score': 5.2},
-                                  {'city_name': 'badplace',
-                                   'city_rank': 3,
-                                   'city_score': 2.2}
-                                  ]}
+        city_data = await self.application.city_service.get_scores(args[0].split(','))
+        response = {'city_data': city_data}
 
         self.set_status(HTTPStatus.OK)
         self.write(json.dumps(response))

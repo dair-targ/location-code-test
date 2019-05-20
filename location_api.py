@@ -1,14 +1,21 @@
-import tornado.web
 import tornado.ioloop
-from app.location_comparison_handler import LocationComparisonHandler
-from app.location_data_handler import LocationHandler
+from app.application import LocationCodeApplication
+import logging
 
-
-def make_app():
-    return tornado.web.Application([(r"/location-data/([a-zA-Z0-9]*)?", LocationHandler, {}),
-                                    (r"/location-comparison/cities=\[(\S+)\]", LocationComparisonHandler, {})])
 
 if __name__ == "__main__":
-    application = make_app()
-    application.listen(8484)
-    tornado.ioloop.IOLoop.current().start()
+    address, port = ('0.0.0.0', 8484)
+    logging.basicConfig(level=logging.DEBUG)
+    application = LocationCodeApplication()
+    server = application.listen(port=port, address=address)
+    logging.info(f'Listening http://{address}:{port}/')
+    try:
+        current_io_loop = tornado.ioloop.IOLoop.current()
+        tornado.ioloop.PeriodicCallback(
+            callback=application.run_daily,
+            callback_time=86400000,  # Daily
+            io_loop=current_io_loop,
+        ).start()
+        current_io_loop.start()
+    except (KeyboardInterrupt, SystemExit):
+        logging.info('Exit due to keyboard interruption')

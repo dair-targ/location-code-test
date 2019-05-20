@@ -88,3 +88,15 @@ all other columns contain random data. The columns in this file are:
 List of other open APIs that can be used to retrieve data: https://github.com/toddmotto/public-apis#weather
 
 
+# Notes
+* I was using Python 3.7. The most distinct feature is async/await keywords which are properly supported
+since Python3.5+ as far as I remember
+* I changed the way unit tests are performing queries since there is a
+[known issue](https://github.com/tornadoweb/tornado/issues/1154) about `@gen_test`
+not working well together with `AsyncHTTPTestCase.fetch`
+* I deduplicated application configured in `location_api.py` and `test_location_handlers.py`
+so the tests are guaranteed to run against the same URL mapping and the same application.
+* I decided not to use database so the code could be executed and runned without additional efforts.
+I might have used SQLite, but then I would need to manage DB schema. To simplify solution I decided not to use it.
+However in real world, if we would expect the data growth - I would consider replacing in-memory
+data with a database.

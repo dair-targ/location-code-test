@@ -1,11 +1,13 @@
 import numbers
 import os
+
+from tornado.httpclient import HTTPRequest
 from tornado.testing import AsyncHTTPTestCase
 from tornado.escape import json_decode
-from tornado.web import Application
+from tornado.test.gen_test import gen_test
 from http import HTTPStatus
-from app.location_data_handler import LocationHandler
-from app.location_comparison_handler import LocationComparisonHandler
+
+from app.application import LocationCodeApplication
 
 os.environ['ASYNC_TEST_TIMEOUT'] = '10'
 
@@ -13,42 +15,43 @@ os.environ['ASYNC_TEST_TIMEOUT'] = '10'
 class TestLocationHandler(AsyncHTTPTestCase):
 
     def get_app(self):
+        return LocationCodeApplication()
 
-        return Application([(r"/location-data/([a-zA-Z0-9]*)?", LocationHandler, {}),
-                            (r"/location-comparison/cities=\[(\S+)\]", LocationComparisonHandler, {})])
-
-    def test_get_location_data(self):
+    @gen_test
+    async def test_get_location_data(self):
         """
         Get the location data for a city and check the
         :return:
         """
         for city_name in ['dublin', 'London', 'Copenhagen']:
-            response = self.fetch(
-                path="/location-data/{}".format(city_name),
+            response = await self.http_client.fetch(request=HTTPRequest(
+                url=self.get_url(path="/location-data/{}".format(city_name)),
                 method='GET'
-            )
+            ))
             self.assertEqual(response.code, HTTPStatus.OK)
             self.check_city_response(response, city_name.lower())
 
-    def test_get_bad_location_data(self):
+    @gen_test
+    async def test_get_bad_location_data(self):
         """
         Try to get the location data for an unknown city. Check to make sure that a BAD_REQUEST is returned.
         :return:
         """
         city_name = 'notarealplace'
-        response = self.fetch(
-            path="/location-data/{}".format(city_name),
+        response = await self.http_client.fetch(request=HTTPRequest(
+            url=self.get_url(path="/location-data/{}".format(city_name)),
             method='GET'
-        )
+        ), raise_error=False)
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST, "Incorrect response for an unknown city")
 
-    def test_compare_cities(self):
+    @gen_test
+    async def test_compare_cities(self):
         city_names = ['dublIn', 'london', 'lisbon', 'Amsterdam', 'CopenHaGeN']
 
-        response = self.fetch(
-            path="/location-comparison/cities=[{}]".format(','.join(city_names)),
+        response = await self.http_client.fetch(request=HTTPRequest(
+            url=self.get_url("/location-comparison/cities=[{}]".format(','.join(city_names))),
             method='GET'
-        )
+        ), raise_error=False)
         self.assertEqual(response.code, HTTPStatus.OK)
         self.check_comparison_response(response, city_names)
 
